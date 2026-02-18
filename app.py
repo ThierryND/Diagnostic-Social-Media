@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -12,6 +11,75 @@ if 'auth' not in st.session_state:
 if 'page' not in st.session_state:
     st.session_state.page = "login"
 
+# --- GRILLE DE NOTATION ---
+SCORING_GRID = {
+    "Q1": {
+        "0-300€": {"YT": 0, "FB": 1, "IG": 2, "TK": 3},
+        "300-800€": {"YT": 1, "FB": 2, "IG": 3, "TK": 2},
+        "800-1500€": {"YT": 2, "FB": 3, "IG": 2, "TK": 1},
+        "1500€+": {"YT": 3, "FB": 2, "IG": 2, "TK": 1}
+    },
+    "Q2": {
+        "0-2h": {"YT": 0, "FB": 3, "IG": 1, "TK": 1},
+        "2-4h": {"YT": 1, "FB": 2, "IG": 2, "TK": 2},
+        "4-7h": {"YT": 2, "FB": 1, "IG": 3, "TK": 2},
+        "7-10h": {"YT": 3, "FB": 1, "IG": 2, "TK": 2},
+        "10h+": {"YT": 3, "FB": 0, "IG": 1, "TK": 3}
+    },
+    "Q3": {
+        "Débutant": {"YT": 0, "FB": 3, "IG": 2, "TK": 2},
+        "Intermédiaire": {"YT": 1, "FB": 2, "IG": 3, "TK": 3},
+        "Avancé": {"YT": 3, "FB": 1, "IG": 2, "TK": 2},
+        "Expert": {"YT": 3, "FB": 0, "IG": 1, "TK": 1}
+    },
+    "Q6": {
+        "Blocage total": {"YT": -20, "FB": 5, "IG": 0, "TK": -20},
+        "Peu à l'aise": {"YT": 0, "FB": 3, "IG": 2, "TK": 1},
+        "Assez à l'aise": {"YT": 2, "FB": 1, "IG": 3, "TK": 3},
+        "Très à l'aise": {"YT": 4, "FB": 0, "IG": 2, "TK": 5}
+    },
+    "Q13": {
+        "Notoriété locale": {"YT": 0, "FB": 4, "IG": 2, "TK": 1},
+        "Acquisition clients": {"YT": 1, "FB": 2, "IG": 4, "TK": 3},
+        "Recrutement": {"YT": 2, "FB": 2, "IG": 2, "TK": 4},
+        "Expertise": {"YT": 5, "FB": 1, "IG": 1, "TK": 0}
+    },
+    "Q14": {
+        "18-25": {"YT": 1, "FB": 0, "IG": 2, "TK": 5},
+        "25-35": {"YT": 2, "FB": 1, "IG": 4, "TK": 3},
+        "35-50": {"YT": 2, "FB": 4, "IG": 3, "TK": 1},
+        "50-65": {"YT": 1, "FB": 5, "IG": 1, "TK": 0},
+        "Multi": {"YT": 3, "FB": 2, "IG": 2, "TK": 2}
+    },
+    "Q18": {
+        "Quartier/Ville": {"YT": 0, "FB": 5, "IG": 3, "TK": 1},
+        "Région": {"YT": 1, "FB": 4, "IG": 3, "TK": 2},
+        "National": {"YT": 3, "FB": 2, "IG": 4, "TK": 4},
+        "International": {"YT": 5, "FB": 1, "IG": 3, "TK": 3}
+    },
+    "Q20": {
+        "Vidéo courte": {"YT": 1, "FB": 1, "IG": 3, "TK": 5},
+        "Vidéo longue": {"YT": 5, "FB": 1, "IG": 0, "TK": 0},
+        "Visuels+Texte": {"YT": 0, "FB": 4, "IG": 5, "TK": 0},
+        "Texte long": {"YT": 0, "FB": 5, "IG": 1, "TK": 0}
+    },
+    "Q23": {
+        "100% Actu": {"YT": 0, "FB": 3, "IG": 4, "TK": 5},
+        "Mixte": {"YT": 3, "FB": 3, "IG": 3, "TK": 3},
+        "100% Evergreen": {"YT": 5, "FB": 1, "IG": 1, "TK": 0}
+    },
+    "Q26": {
+        "Très forte": {"YT": 0, "FB": 3, "IG": 1, "TK": -2},
+        "Moyenne": {"YT": 2, "FB": 2, "IG": 2, "TK": 1},
+        "Aucune": {"YT": 3, "FB": 0, "IG": 3, "TK": 5}
+    },
+    "Q31": {
+        "Détaché": {"YT": 1, "FB": 2, "IG": 3, "TK": 5},
+        "Moyen": {"YT": 3, "FB": 3, "IG": 3, "TK": 2},
+        "Perfectionniste bloquant": {"YT": 4, "FB": 1, "IG": 2, "TK": -3}
+    }
+}
+
 # --- STYLE CSS PERSONNALISÉ ---
 st.markdown("""
     <style>
@@ -19,11 +87,11 @@ st.markdown("""
     .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #004aad; color: white; }
     .stSelectbox, .stRadio { background-color: white; border-radius: 10px; padding: 10px; margin-bottom: 10px; }
     </style>
-    """, unsafe_allow_html =True)
+    """, unsafe_allow_html=True)
 
 # --- LOGIQUE D'AUTHENTIFICATION ---
 def login_page():
-    st.title("🔐 Accès Interface Multigestion")
+    st.title("Accès Interface Multigestion")
     st.subheader("Outil de diagnostic pour Experts-Comptables")
     with st.container():
         col1, col2, col3 = st.columns([1,2,1])
@@ -38,35 +106,41 @@ def login_page():
                 else:
                     st.error("Identifiants incorrects (Essai : admin / expert2024)")
 
-# --- MOTEUR DE SCORING ---
+# --- MOTEUR DE SCORING ACTUALISÉ ---
 def calculate_scoring(r):
-    # Initialisation
-    scores = {"TikTok": 0, "Instagram": 0, "Facebook": 0, "YouTube": 0}
-    eliminated = []
-
-    # --- PHASE 1 (Coeff 1.0) ---
-    # Logique simplifiée : on simule l'attribution de points
-    if r['q1'] == "1500€+": scores["YouTube"] += 10; scores["TikTok"] += 10
-    if r['q6'] == "Blocage total": eliminated.extend(["TikTok", "YouTube"])
+    # On sépare les scores par phase pour les graphiques
+    phases_scores = {
+        "Phase 1 : Ressources": {"YouTube": 0, "Facebook": 0, "Instagram": 0, "TikTok": 0},
+        "Phase 2 : Stratégie": {"YouTube": 0, "Facebook": 0, "Instagram": 0, "TikTok": 0},
+        "Phase 3 : Psychologie": {"YouTube": 0, "Facebook": 0, "Instagram": 0, "TikTok": 0}
+    }
     
-    # --- PHASE 2 (Coeff 1.5) ---
-    c2 = 1.5
-    if r['q13'] == "Expertise": scores["YouTube"] += 10 * c2
-    if r['q14'] == "18-25": scores["TikTok"] += 10 * c2
-    if r['q15'] == "TPE": scores["Facebook"] += 8 * c2; scores["Instagram"] += 8 * c2
+    mapping = {"YT": "YouTube", "FB": "Facebook", "IG": "Instagram", "TK": "TikTok"}
+    
+    for q_id, options in SCORING_GRID.items():
+        user_answer = r.get(q_id.lower())
+        if user_answer in options:
+            points = options[user_answer]
+            # Détermination de la phase selon le numéro de question
+            q_num = int(q_id[1:])
+            if q_num <= 12: phase = "Phase 1 : Ressources"
+            elif q_num <= 24: phase = "Phase 2 : Stratégie"
+            else: phase = "Phase 3 : Psychologie"
+            
+            for platform_key, score_val in points.items():
+                phases_scores[phase][mapping[platform_key]] += score_val
 
-    # --- PHASE 3 (Malus 0.8) ---
-    m = 0.8
-    if r['q31'] == "Perfectionniste bloquant":
-        for k in scores: scores[k] -= 15 * m
+    # Calcul du total pour déterminer le gagnant
+    total_scores = {"YouTube": 0, "Facebook": 0, "Instagram": 0, "TikTok": 0}
+    for p_scores in phases_scores.values():
+        for plat, val in p_scores.items():
+            total_scores[plat] += val
+            
+    return total_scores, phases_scores
 
-    # Application des éliminations
-    for p in eliminated: scores[p] = 0
-    return scores, eliminated
-
-# --- PAGE DIAGNOSTIC (32 QUESTIONS) ---
+# --- PAGE DIAGNOSTIC ---
 def diag_page():
-    st.title("📋 Questionnaire de Diagnostic")
+    st.title("Questionnaire de Diagnostic")
     st.info("Répondez sincèrement. Ce diagnostic prend environ 5 minutes.")
 
     with st.form("main_survey"):
@@ -121,70 +195,61 @@ def diag_page():
             q32 = st.radio("Q32 : Capacité à déléguer", ["Impossible", "Difficile", "Facile"])
 
         if st.form_submit_button("LANCER L'ANALYSE"):
-            # Collecte des données
             responses = {
-                            'q1': q1, 'q2': q2, 'q3': q3, 'q4': q4, 'q5': q5, 'q6': q6,
-                            'q7': q7, 'q8': q8, 'q9': q9, 'q10': q10, 'q11': q11, 'q12': q12,
-                            'q13': q13, 'q14': q14, 'q15': q15, 'q16': q16, 'q17': q17, 'q18': q18,
-                            'q19': q19, 'q20': q20, 'q21': q21, 'q22': q22, 'q23': q23, 'q24': q24,
-                            'q25': q25, 'q26': q26, 'q27': q27, 'q28': q28, 'q29': q29, 'q30': q30,
-                            'q31': q31, 'q32': q32
-                        }# Capture toutes les variables q1...q32
-
-            #responses = locals() ancien code qui Capture toutes les variables q1...q32
-            st.session_state.results, st.session_state.eliminated = calculate_scoring(responses)
+                'q1': q1, 'q2': q2, 'q3': q3, 'q4': q4, 'q5': q5, 'q6': q6,
+                'q7': q7, 'q8': q8, 'q9': q9, 'q10': q10, 'q11': q11, 'q12': q12,
+                'q13': q13, 'q14': q14, 'q15': q15, 'q16': q16, 'q17': q17, 'q18': q18,
+                'q19': q19, 'q20': q20, 'q21': q21, 'q22': q22, 'q23': q23, 'q24': q24,
+                'q25': q25, 'q26': q26, 'q27': q27, 'q28': q28, 'q29': q29, 'q30': q30,
+                'q31': q31, 'q32': q32
+            }
+            st.session_state.results = calculate_scoring(responses)
             st.session_state.page = "results"
             st.rerun()
 
 # --- PAGE RÉSULTATS ---
 def results_page():
-    st.title("🎯 Résultat de votre Diagnostic Stratégique")
-    scores = st.session_state.results
-    eliminated = st.session_state.eliminated
+    st.title("Analyse de votre Potentiel Social Media")
     
-    # Calcul plateforme gagnante
-    winner = max(scores, key=scores.get)
-    score_final = scores[winner]
-    compatibility = min(98, int((score_final / 60) * 100)) # Normalisation pour affichage
+    total_scores = st.session_state.results[0]
+    phases_data = st.session_state.results[1]
+    winner = max(total_scores, key=total_scores.get)
 
-    # Affichage Header
-    st.balloons()
-    col_res1, col_res2 = st.columns([1,1])
+    # Header de recommandation
+    st.success(f"### Recommandation Prioritaire : **{winner}**")
     
-    with col_res1:
-        st.success(f"## Recommandation : {winner}")
-        st.metric("Compatibilité", f"{compatibility}%")
-        st.write("**Pourquoi cette plateforme ?** Votre profil montre une adéquation entre vos ressources temps/budget et l'audience cible de ce réseau.")
+    # Création des 3 graphiques
+    for phase_name, scores in phases_data.items():
+        st.subheader(phase_name)
+        
+        # Préparation des données pour Plotly
+        df_plot = pd.DataFrame({
+            'Plateforme': list(scores.keys()),
+            'Score': list(scores.values())
+        }).sort_values(by='Score', ascending=True)
 
-    with col_res2:
-        # Graphique
-        df = pd.DataFrame(dict(r=list(scores.values()), theta=list(scores.keys())))
-        fig = go.Figure(data=[go.Bar(x=list(scores.keys()), y=list(scores.values()), marker_color='#004aad')])
-        fig.update_layout(title="Comparatif des potentiels", height=300)
+        fig = go.Figure(go.Bar(
+            x=df_plot['Score'],
+            y=df_plot['Plateforme'],
+            orientation='h',
+            marker_color=['#004aad' if p != winner else '#FF4B4B' for p in df_plot['Plateforme']]
+        ))
+
+        fig.update_layout(
+            height=250,
+            margin=dict(l=20, r=20, t=30, b=20),
+            xaxis_title="Points accumulés",
+            yaxis_title=None
+        )
+        
         st.plotly_chart(fig, use_container_width=True)
 
-    # Plateformes éliminées
-    if eliminated:
-        st.warning(f"🚫 Plateformes exclues de la stratégie : {', '.join(eliminated)} (Raison : Contraintes techniques ou blocages vidéo)")
-
-    # Plan d'Action
-    st.header("📌 Votre Plan d'Action V1")
-    t1, t2, t3 = st.tabs(["Action Immédiate", "Contenu", "KPIs"])
-    with t1:
-        st.write(f"- Création/Optimisation du profil sur **{winner}**")
-        st.write("- Paramétrage des outils de sécurité et déontologie")
-    with t2:
-        st.write("- Production de 2 publications piliers par semaine")
-        st.write("- Utilisation des thématiques identifiées en Phase 2")
-    with t3:
-        st.write("- Objectif : 100 abonnés qualifiés en 30 jours")
-
-    if st.button("🔄 Refaire un diagnostic"):
+    if st.button("Relancer un diagnostic"):
         st.session_state.page = "diag"
         st.rerun()
 
 # --- ROUTAGE ---
-if not st.session_state.auth:
+if st.session_state.page == "login":
     login_page()
 elif st.session_state.page == "diag":
     diag_page()
